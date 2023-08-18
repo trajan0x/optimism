@@ -1,7 +1,6 @@
 package fault
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/ethereum-optimism/optimism/op-service/client"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr/metrics"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -110,12 +108,15 @@ func ValidateAbsolutePrestate(ctx context.Context, trace types.TraceProvider, lo
 	if err != nil {
 		return fmt.Errorf("failed to get the trace provider's absolute prestate: %w", err)
 	}
-	providerPrestateHash := crypto.Keccak256(providerPrestate)
-	onchainPrestate, err := loader.FetchAbsolutePrestateHash(ctx)
+	providerPrestateHash, err := trace.StateHash(ctx, providerPrestate)
+	if err != nil {
+		return fmt.Errorf("failed to compute state-hash: %w", err)
+	}
+	onchainPrestateHash, err := loader.FetchAbsolutePrestateHash(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get the onchain absolute prestate: %w", err)
 	}
-	if !bytes.Equal(providerPrestateHash, onchainPrestate) {
+	if providerPrestateHash != onchainPrestateHash {
 		return fmt.Errorf("trace provider's absolute prestate does not match onchain absolute prestate")
 	}
 	return nil

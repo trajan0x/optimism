@@ -4,8 +4,10 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/ethereum-optimism/optimism/op-challenger/fault/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/ethereum-optimism/optimism/op-challenger/fault/types"
 )
 
 // MinimalFaultDisputeGameCaller is a minimal interface around [bindings.FaultDisputeGameCaller].
@@ -27,7 +29,7 @@ type MinimalFaultDisputeGameCaller interface {
 type Loader interface {
 	FetchClaims(ctx context.Context) ([]types.Claim, error)
 	FetchGameDepth(ctx context.Context) (uint64, error)
-	FetchAbsolutePrestateHash(ctx context.Context) ([]byte, error)
+	FetchAbsolutePrestateHash(ctx context.Context) (common.Hash, error)
 }
 
 // loader pulls in fault dispute game claim data periodically and over subscriptions.
@@ -117,16 +119,15 @@ func (l *loader) FetchClaims(ctx context.Context) ([]types.Claim, error) {
 }
 
 // FetchAbsolutePrestateHash fetches the hashed absolute prestate from the fault dispute game.
-func (l *loader) FetchAbsolutePrestateHash(ctx context.Context) ([]byte, error) {
+func (l *loader) FetchAbsolutePrestateHash(ctx context.Context) (common.Hash, error) {
 	callOpts := bind.CallOpts{
 		Context: ctx,
 	}
 
 	absolutePrestate, err := l.caller.ABSOLUTEPRESTATE(&callOpts)
 	if err != nil {
-		return nil, err
+		return common.Hash{}, err
 	}
-	returnValue := absolutePrestate[:]
 
-	return returnValue, nil
+	return absolutePrestate, nil
 }
